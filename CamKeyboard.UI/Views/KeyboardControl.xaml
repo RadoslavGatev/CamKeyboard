@@ -18,9 +18,9 @@
         <Grid Grid.Column="0" Grid.Row="0">
             <Image Name="Camera" Source="{Binding Path=GetImage, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True }"/>
         </Grid>
-        <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
+        <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
             <Button Content="Start Capturing" Command="{Binding Start}"/>
-        </Grid>
+        </StackPanel>
         <Grid Grid.Column="0" Grid.Row="1">
             <Image Name="CameraProcessed" Source="{Binding Path=GetProcessedImage, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True }"/>
         </Grid>

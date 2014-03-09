@@ -3,9 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:CamKeyboard.UI" x:Class="CamKeyboard.UI.MainWindow"
     xmlns:views="clr-namespace:CamKeyboard.UI.Views"
-    ResizeMode="NoResize"
-        Title="MainWindow" Height="350" Width="525">
+    ResizeMode="CanResize"
+        Title="MainWindow" Height="550" Width="725">
     <Grid>
-        <views:KeyboardControl  Height="300" Width="500"/>
+        <views:KeyboardControl  Height="{Binding}" Width="{Binding}"/>
     </Grid>
 </Window>
