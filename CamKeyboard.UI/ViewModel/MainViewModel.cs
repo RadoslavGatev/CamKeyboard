@@ -20,10 +20,11 @@ namespace CamKeyboard.UI.ViewModel
         private ICommand start;
         private CamKeyboardManager camKeyboard;
         private ImageSource currentFrame;
+        private ImageSource currentProcessedFrame;
 
         public MainViewModel(string displayName)
             : base(displayName)
-        { 
+        {  
         }
 
         public ICommand Start
@@ -51,6 +52,14 @@ namespace CamKeyboard.UI.ViewModel
             }
         }
 
+        public ImageSource GetProcessedImage
+        {
+            get
+            {
+                return currentProcessedFrame;
+            }
+        }
+
         public void StartCapture()
         {
             this.camKeyboard = new CamKeyboardManager();
@@ -62,6 +71,8 @@ namespace CamKeyboard.UI.ViewModel
         {
             this.currentFrame = args.Image;
             OnPropertyChanged("GetImage");
+            this.currentProcessedFrame = args.ProcessedImage;
+            OnPropertyChanged("GetProcessedImage");
         }
 
     }
