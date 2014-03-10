@@ -32,26 +32,12 @@ namespace CamKeyboard.Core
         private void PreProcess()
         {
             var grayscaleImage = this.frame.Convert<Gray, byte>();
-            var integralImage = new Image<Gray, int>(this.frame.Width, this.frame.Height);
+            var integralImage = new Image<Gray, double>(this.frame.Width, this.frame.Height);
 
             int sum = 0;
+            var squaredSum = new Image<Gray, double>(this.frame.Width, this.frame.Height);
             //Calculate integral image
-            for (int i = 0; i < grayscaleImage.Rows; i++)
-            {
-                sum = 0;
-                for (int j = 0; j < grayscaleImage.Cols; j++)
-                {
-                    sum = sum + (int)grayscaleImage[i, j].Intensity;
-                    if (i == 0)
-                    {
-                        integralImage[i, j] = new Gray(sum);
-                    }
-                    else
-                    {
-                        integralImage[i, j] = new Gray(integralImage[i - 1, j].Intensity + sum);
-                    }
-                }
-            }
+            grayscaleImage.Integral(out integralImage, out squaredSum);
 
             this.binaryImage = new Image<Gray, byte>(grayscaleImage.Width, grayscaleImage.Height);
             Point topLeft, bottomRight;
@@ -82,7 +68,7 @@ namespace CamKeyboard.Core
 
                     if (grayscaleImage[i, j].Intensity * count < sum * 0.85)
                     {
-                       this.binaryImage[i, j] = new Gray(Foreground);
+                        this.binaryImage[i, j] = new Gray(Foreground);
                     }
                     else
                     {
