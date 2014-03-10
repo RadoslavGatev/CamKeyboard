@@ -30,7 +30,7 @@ namespace CamKeyboard.Core
 
         public void StartCapturing()
         {
-            this.camera.ImageGrabbed += OnNewFrameCaptured;
+            this.camera.ImageGrabbed += ProcessImage;
             this.camera.FlipHorizontal = true;
             this.camera.Start();
         }
@@ -43,22 +43,29 @@ namespace CamKeyboard.Core
             }
         }
 
-        protected virtual void OnNewFrameCaptured(object sender, EventArgs arg)
+        protected virtual void OnNewFrameCaptured(object sender, OnCaptureEventHandlerArgs arg)
+        {
+            if (NewFrameCaptured != null)
+            {
+                NewFrameCaptured(this, arg);
+            }
+        }
+
+        private void ProcessImage(object sender, EventArgs arg)
         {
             Image<Bgr, Byte> frame = this.camera.RetrieveBgrFrame();
+
+            var image = new KeyboardImage(frame);
+            Image<Gray, byte> processedImage = image.Analyze();
 
             var onCaptureArgs = new OnCaptureEventHandlerArgs()
             {
                 Image = BitmapSourceConverter.ToBitmapSource(frame),
-                ProcessedImage = BitmapSourceConverter.ToBitmapSource(frame)
+                ProcessedImage = BitmapSourceConverter.ToBitmapSource(processedImage)
             };
 
-            if (NewFrameCaptured != null)
-            {
-                NewFrameCaptured(this, onCaptureArgs);
-            }
+            OnNewFrameCaptured(this, onCaptureArgs);
         }
-
     }
 
 }

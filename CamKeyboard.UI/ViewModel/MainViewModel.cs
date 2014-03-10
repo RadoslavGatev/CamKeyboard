@@ -1,15 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using CamKeyboard.Core;
 using CamKeyboard.UI.Helpers;
 
@@ -24,7 +27,9 @@ namespace CamKeyboard.UI.ViewModel
 
         public MainViewModel(string displayName)
             : base(displayName)
-        {  
+        {
+            this.camKeyboard = new CamKeyboardManager();
+            this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
         }
 
         public ICommand Start
@@ -33,7 +38,7 @@ namespace CamKeyboard.UI.ViewModel
             {
                 if (this.start == null)
                 {
-                    this.start = new RelayCommand(StartCapture);
+                    this.start = new AwaitableDelegateCommand(this.StartCapture);
                 }
                 return this.start;
             }
@@ -60,19 +65,24 @@ namespace CamKeyboard.UI.ViewModel
             }
         }
 
-        public void StartCapture()
+        private async Task StartCapture()
         {
-            this.camKeyboard = new CamKeyboardManager();
-            this.camKeyboard.NewFrameCaptured += new OnCaptureEventHandler(OnNewFrameCaptured);
-            this.camKeyboard.StartCapturing();
+            await Task.Run(() => this.camKeyboard.StartCapturing());
         }
 
-        private void OnNewFrameCaptured(object sender, OnCaptureEventHandlerArgs args)
+        public void OnNewFrameCaptured(object sender, OnCaptureEventHandlerArgs args)
         {
-            this.currentFrame = args.Image;
-            OnPropertyChanged("GetImage");
-            this.currentProcessedFrame = args.ProcessedImage;
-            OnPropertyChanged("GetProcessedImage");
+            Application.Current.Dispatcher.Invoke(
+                DispatcherPriority.Send,
+                (DispatcherOperationCallback)(arg =>
+                {
+                    this.currentFrame = args.Image;
+                    OnPropertyChanged("GetImage");
+                    this.currentProcessedFrame = args.ProcessedImage;
+                    OnPropertyChanged("GetProcessedImage");
+                    return null;
+                }), null);
+
         }
 
     }

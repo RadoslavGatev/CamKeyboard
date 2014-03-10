@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="BitmapSourceConverter.cs" />
     <Compile Include="CamKeyboardManager.cs" />
+    <Compile Include="KeyboardImage.cs" />
     <Compile Include="OnCaptureEventHandlerArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
