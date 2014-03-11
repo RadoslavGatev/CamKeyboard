@@ -60,6 +60,7 @@
     <Compile Include="CamKeyboardManager.cs" />
     <Compile Include="KeyboardImage.cs" />
     <Compile Include="OnCaptureEventHandlerArgs.cs" />
+    <Compile Include="OnFrameProcessEventHandlerArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

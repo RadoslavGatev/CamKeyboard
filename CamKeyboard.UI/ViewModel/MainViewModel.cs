@@ -30,6 +30,7 @@ namespace CamKeyboard.UI.ViewModel
         {
             this.camKeyboard = new CamKeyboardManager();
             this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
+            this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
         }
 
         public ICommand Start
@@ -78,11 +79,15 @@ namespace CamKeyboard.UI.ViewModel
                 {
                     this.currentFrame = args.Image;
                     OnPropertyChanged("GetImage");
-                    this.currentProcessedFrame = args.ProcessedImage;
-                    OnPropertyChanged("GetProcessedImage");
                     return null;
                 }), null);
 
+        }
+
+        public void OnFrameProcessed(object sender, OnFrameProcessEventHandlerArgs args)
+        {
+            this.currentProcessedFrame = args.ProcessedImage;
+            OnPropertyChanged("GetProcessedImage");
         }
 
     }

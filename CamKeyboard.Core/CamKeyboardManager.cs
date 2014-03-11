@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.Structure;
@@ -10,12 +11,32 @@ using Emgu.CV.Structure;
 namespace CamKeyboard.Core
 {
     public delegate void OnCaptureEventHandler(object sender, OnCaptureEventHandlerArgs args);
+    public delegate void OnFrameProcessEventHandler(object sender, OnFrameProcessEventHandlerArgs args);
+
 
     public class CamKeyboardManager : IDisposable
     {
-        private Capture camera { get; set; }
-
         public event OnCaptureEventHandler NewFrameCaptured;
+        public event OnFrameProcessEventHandler NewFrameProcessed;
+
+        private Capture camera { get; set; }
+        private int frameCounter = 0;
+
+        public int FrameCounter
+        {
+            get { return this.frameCounter; }
+            set
+            {
+                if (value > 1000)
+                {
+                    this.frameCounter = 0;
+                }
+                else
+                {
+                    this.frameCounter = value;
+                }
+            }
+        }
 
         public CamKeyboardManager()
         {
@@ -51,21 +72,45 @@ namespace CamKeyboard.Core
             }
         }
 
+        protected virtual void OnNewFrameProcessed(object sender, OnFrameProcessEventHandlerArgs arg)
+        {
+            if (NewFrameProcessed != null)
+            {
+                NewFrameProcessed(this, arg);
+            }
+        }
+
         private void ProcessImage(object sender, EventArgs arg)
         {
             Image<Bgr, Byte> frame = this.camera.RetrieveBgrFrame();
 
-            var image = new KeyboardImage(frame);
-            Image<Gray, byte> processedImage = image.Analyze();
-
             var onCaptureArgs = new OnCaptureEventHandlerArgs()
             {
                 Image = BitmapSourceConverter.ToBitmapSource(frame),
-                ProcessedImage = BitmapSourceConverter.ToBitmapSource(processedImage)
             };
 
+            if (this.FrameCounter % 2 == 0)
+            {
+                var workingThread = new Thread(() =>
+                {
+                    var image = new KeyboardImage(frame);
+                    Image<Gray, byte> processedImage = image.Analyze();
+                    OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
+                    {
+                        ProcessedImage = BitmapSourceConverter.ToBitmapSource(processedImage)
+                    });
+                });
+                workingThread.IsBackground = true;
+                workingThread.Priority = ThreadPriority.Normal;
+                workingThread.Start();
+            }
+            this.FrameCounter++;
             OnNewFrameCaptured(this, onCaptureArgs);
         }
+
+
+
+
     }
 
 }

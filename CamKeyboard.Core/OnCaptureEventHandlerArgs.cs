@@ -14,6 +14,5 @@ namespace CamKeyboard.Core
     public class OnCaptureEventHandlerArgs
     {
         public BitmapSource Image { get; set; }
-        public BitmapSource ProcessedImage { get; set; }
     }
 }
