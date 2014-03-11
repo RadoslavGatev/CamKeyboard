@@ -12,18 +12,18 @@ namespace CamKeyboard.Core
 {
     class KeyboardImage
     {
-        public readonly int Foreground = 255;
-        public readonly int Background = 0;
+        public readonly Byte Foreground = 255;
+        public readonly Byte Background = 0;
 
-        private Image<Bgr, byte> frame { get; set; }
-        private Image<Gray, byte> binaryImage { get; set; }
+        private Image<Bgr, Byte> frame { get; set; }
+        private Image<Gray, Byte> binaryImage { get; set; }
 
-        public KeyboardImage(Image<Bgr, byte> frame)
+        public KeyboardImage(Image<Bgr, Byte> frame)
         {
             this.frame = frame;
         }
 
-        public Image<Gray, byte> Analyze()
+        public Image<Gray, Byte> Analyze()
         {
             this.PreProcess();
             return this.binaryImage;
@@ -31,52 +31,54 @@ namespace CamKeyboard.Core
 
         private void PreProcess()
         {
-            var grayscaleImage = this.frame.Convert<Gray, byte>();
-            var integralImage = new Image<Gray, double>(this.frame.Width, this.frame.Height);
+            var grayscaleImage = this.frame.Convert<Gray, Byte>();
+            var integralImage = new Image<Gray, Double>(this.frame.Width, this.frame.Height);
 
             int sum = 0;
-            var squaredSum = new Image<Gray, double>(this.frame.Width, this.frame.Height);
+            var squaredSum = new Image<Gray, Double>(this.frame.Width, this.frame.Height);
             //Calculate integral image
             grayscaleImage.Integral(out integralImage, out squaredSum);
 
-            this.binaryImage = new Image<Gray, byte>(grayscaleImage.Width, grayscaleImage.Height);
+            this.binaryImage = new Image<Gray, Byte>(grayscaleImage.Width, grayscaleImage.Height);
             Point topLeft, bottomRight;
             Size halfSize = new Size((int)(grayscaleImage.Cols * 0.125) / 2, (int)(grayscaleImage.Rows * 0.125) / 2);
             int count;
 
             //Perform thresholding
-            for (int i = 0; i < grayscaleImage.Rows; i++)
+            var binaryImageData = this.binaryImage.Data;
+            for (int row = 0; row < grayscaleImage.Rows; row++)
             {
-                for (int j = 0; j < grayscaleImage.Cols; j++)
+                for (int col = 0; col < grayscaleImage.Cols; col++)
                 {
-                    topLeft = new Point(Math.Max(0, j - halfSize.Width),
-                                     Math.Max(0, i - halfSize.Height));
+                    topLeft = new Point(Math.Max(0, col - halfSize.Width),
+                                     Math.Max(0, row - halfSize.Height));
 
-                    bottomRight = new Point(Math.Min(grayscaleImage.Cols - 1, j + halfSize.Width),
-                                         Math.Min(grayscaleImage.Rows - 1, i + halfSize.Height));
+                    bottomRight = new Point(Math.Min(grayscaleImage.Cols - 1, col + halfSize.Width),
+                                         Math.Min(grayscaleImage.Rows - 1, row + halfSize.Height));
 
                     count = (bottomRight.X - topLeft.X + 1) * (bottomRight.Y - topLeft.Y + 1);
 
-                    sum = (int)integralImage[bottomRight].Intensity;
-                    sum -= (int)integralImage[Math.Max(0, topLeft.Y - 1),
-                                                         bottomRight.X].Intensity;
+                    sum = (int)integralImage.Data[bottomRight.Y, bottomRight.X, 0];
+                    sum -= (int)integralImage.Data[Math.Max(0, topLeft.Y - 1),
+                                                         bottomRight.X, 0];
 
-                    sum -= (int)integralImage[bottomRight.Y, Math.Max(0,
-                                                         topLeft.X - 1)].Intensity;
-                    sum += (int)integralImage[Math.Max(0, topLeft.Y - 1),
-                                                         Math.Max(0, topLeft.X - 1)].Intensity;
+                    sum -= (int)integralImage.Data[bottomRight.Y, Math.Max(0,
+                                                         topLeft.X - 1), 0];
+                    sum += (int)integralImage.Data[Math.Max(0, topLeft.Y - 1),
+                                                         Math.Max(0, topLeft.X - 1), 0];
 
-                    if (grayscaleImage[i, j].Intensity * count < sum * 0.85)
+                    if (grayscaleImage[row, col].Intensity * count < sum * 0.85)
                     {
-                        this.binaryImage[i, j] = new Gray(Foreground);
+                        binaryImageData[row, col, 0] = Foreground;
                     }
                     else
                     {
-                        this.binaryImage[i, j] = new Gray(Background);
+                        binaryImageData[row, col, 0] = Background;
                     }
                 }
             }
 
+            this.binaryImage.Data = binaryImageData;
         }
 
     }
