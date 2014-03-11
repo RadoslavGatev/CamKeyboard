@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Emgu.CV;
 using Emgu.CV.Structure;
+using Emgu.CV.Util;
 
 namespace CamKeyboard.Core
 {
@@ -14,19 +15,30 @@ namespace CamKeyboard.Core
     {
         public readonly Byte Foreground = 255;
         public readonly Byte Background = 0;
+        public readonly int PhiBins = 4 * 360;
+        public readonly double LineTreshold = 0.38;
 
         private Image<Bgr, Byte> frame { get; set; }
         private Image<Gray, Byte> binaryImage { get; set; }
+        private Image<Gray, Int32> HoughPlane { get; set; }
+        private Image<Gray, Byte> TreshedPlane { get; set; }
 
         public KeyboardImage(Image<Bgr, Byte> frame)
         {
             this.frame = frame;
         }
 
-        public Image<Gray, Byte> Analyze()
+        public Image<Gray, Int32> Analyze()
         {
             this.PreProcess();
-            return this.binaryImage;
+            //Hough transform parameters
+            int phi_bins = PhiBins;
+            int r_bins = (int)Math.Sqrt(this.frame.Cols * this.frame.Cols + this.frame.Rows * this.frame.Rows); ;
+            int line_threshold = (int)(LineTreshold * r_bins);
+
+            this.CalcHoughPlanes(PhiBins, r_bins);
+            this.CalcHoughPeaks(line_threshold);
+            return this.HoughPlane;
         }
 
         private void PreProcess()
@@ -81,5 +93,105 @@ namespace CamKeyboard.Core
             this.binaryImage.Data = binaryImageData;
         }
 
+        //--------------- Hough transform routines -------------//
+        //Calculate the hough plane.
+        //- phi_bins - number of angle bins
+        //- r_bins - number of distance bins
+        private float phi_step;         //angle step in the Hough plane
+        private float r_step;           //distance step in the Hough plane
+        private void CalcHoughPlanes(int phi_bins, int r_bins)
+        {
+            //Allocate memory for the hough plane
+            HoughPlane = new Image<Gray, Int32>(r_bins, phi_bins);
+
+            //Find the resolution of r and phi
+            float diag_len = (float)Math.Sqrt(this.frame.Cols * this.frame.Cols + this.frame.Rows * this.frame.Rows);
+            r_step = diag_len / r_bins;
+            phi_step = (float)(2 * Math.PI / phi_bins);
+
+            //Variable used through-out the function
+            float phi = 0;
+
+            //Calculate trigonometric look-up tables
+            List<float> sinList = new List<float>(phi_bins);
+            List<float> cosList = new List<float>(phi_bins);
+            for (int i = 0; i < phi_bins; i++)
+            {
+                sinList.Add((float)Math.Sin(phi));
+                cosList.Add((float)Math.Cos(phi));
+                phi += phi_step;
+            }
+
+            //For each row of the input image
+            for (int row = 0; row < this.binaryImage.Rows; row++)
+            {
+                //For each column of the input image
+                for (int col = 0; col < this.binaryImage.Cols; col++)
+                {
+                    //pixel belongs to a line?
+                    if (this.binaryImage.Data[row, col, 0] == Foreground)
+                    {
+                        //for each value along the hough plane phi axis
+                        for (int phi_bin = 0; phi_bin < phi_bins; phi_bin++)
+                        {
+                            float r = col * cosList[phi_bin] + row * sinList[phi_bin];
+
+                            if (r > 0)
+                            {
+                                int r_bin = (int)(r / r_step);
+                                HoughPlane.Data[r_bin, phi_bin, 0]++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //Find the peaks in the plane.
+        //- line_threshold - threshold for the peak intensity
+        private void CalcHoughPeaks(int line_threshold)
+        {
+            //Threshold the Hough plane
+            TreshedPlane = new Image<Gray, byte>(this.HoughPlane.Cols, this.HoughPlane.Rows);
+            for (int i = 0; i < this.HoughPlane.Rows; i++)
+            {
+                for (int j = 0; j < this.HoughPlane.Cols; j++)
+                {
+                    if (this.HoughPlane.Data[i, j, 0] > line_threshold)
+                    {
+                        this.TreshedPlane.Data[i, j, 0] = 255;
+                    }
+                    else
+                    {
+                        this.TreshedPlane.Data[i, j, 0] = 0;
+                    }
+                }
+            }
+            //Merge peaks close to each other
+            int dilation_size = 2;
+            //Mat element = Emgu.CV.CvInvoke. getStructuringElement(MORPH_ELLIPSE,
+            //                                    Size( 2 * dilation_size + 1, 2 * dilation_size + 1),
+            //                                    Point(dilation_size, dilation_size));
+            //Mat dilated_plane;
+            //dilate(threshed_plane, dilated_plane, element);
+
+            ////Find the peaks in the hough_plane
+            //vector<vector<Point> > contours;
+            //vector<Vec4i> hierarchy;
+            //findContours(dilated_plane, contours, hierarchy, CV_RETR_LIST , CV_CHAIN_APPROX_NONE);
+
+            ////Find the centres of the peaks
+            //peak_centers.clear();
+            //for(unsigned int i = 0; i < contours.size(); i++)
+            //{
+            //    Point p = Point(0, 0);
+            //    for(unsigned int j = 0; j < contours[i].size(); j++)
+            //    {
+            //        p += contours[i][j];
+            //    }
+            //    p *= 1.0 / contours[i].size();
+            //    peak_centers.push_back(p);
+            //}
+        }
     }
 }
