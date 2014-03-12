@@ -94,7 +94,7 @@ namespace CamKeyboard.Core
                 var workingThread = new Thread(() =>
                 {
                     var image = new KeyboardImage(frame);
-                    Image<Gray, Int32> processedImage = image.Analyze();
+                    Image<Gray, Byte> processedImage = image.Analyze();
                     OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
                     {
                         ProcessedImage = BitmapSourceConverter.ToBitmapSource(processedImage)
