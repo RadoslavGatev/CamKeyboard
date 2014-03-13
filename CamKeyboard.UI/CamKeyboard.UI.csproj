@@ -146,6 +146,9 @@
     <Content Include="opencv_features2d290.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="opencv_ffmpeg290_64.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="opencv_flann290.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

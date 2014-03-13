@@ -23,11 +23,13 @@ namespace CamKeyboard.Core
 
         private Image<Bgr, Byte> frame { get; set; }
         private Image<Gray, Byte> binaryImage { get; set; }
-        private Image<Gray, Int32> HoughPlane { get; set; }
-        private Image<Gray, Byte> TreshedPlane { get; set; }
 
         public KeyboardImage(Image<Bgr, Byte> frame)
         {
+            if (frame == null)
+            {
+                throw new ArgumentNullException("frame must not be null!");
+            }
             this.frame = frame;
         }
 

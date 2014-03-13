@@ -49,6 +49,27 @@ namespace CamKeyboard.Core
             this.camera = capture;
         }
 
+        public CamKeyboardManager(string videoFileName)
+        {
+            if (videoFileName == null)
+            {
+                throw new ArgumentNullException("videoFileName must not be null!");
+            }
+
+            var capture = new Capture(videoFileName);
+
+            if (capture == null)
+            {
+                throw new NullReferenceException("Capture must not be null");
+            }
+
+            capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_HEIGHT, 480);
+            capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_WIDTH, 640);
+
+
+            this.camera = capture;
+        }
+
         public void StartCapturing()
         {
             this.camera.ImageGrabbed += ProcessImage;
@@ -60,6 +81,7 @@ namespace CamKeyboard.Core
         {
             if (this.camera != null)
             {
+                this.camera.Stop();
                 this.camera.Dispose();
             }
         }
@@ -89,7 +111,7 @@ namespace CamKeyboard.Core
                 Image = BitmapSourceConverter.ToBitmapSource(frame),
             };
 
-            if (this.FrameCounter % 2 == 0)
+            if (this.FrameCounter % 2 == 0 && frame != null)
             {
                 var workingThread = new Thread(() =>
                 {

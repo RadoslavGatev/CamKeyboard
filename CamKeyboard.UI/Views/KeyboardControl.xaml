@@ -19,7 +19,8 @@
             <Image Name="Camera" Source="{Binding Path=GetImage, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True }"/>
         </Grid>
         <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
-            <Button Content="Start Capturing" Command="{Binding Start}"/>
+            <Button Content="Start Camera" Command="{Binding StartCameraCommand}"/>
+            <Button Content="Load a file" Command="{Binding LoadVideoFromFileCommand}"/>
         </StackPanel>
         <Grid Grid.Column="0" Grid.Row="1">
             <Image Name="CameraProcessed" Source="{Binding Path=GetProcessedImage, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True }"/>

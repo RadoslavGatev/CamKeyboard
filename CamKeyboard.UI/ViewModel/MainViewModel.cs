@@ -20,7 +20,8 @@ namespace CamKeyboard.UI.ViewModel
 {
     class MainViewModel : BaseViewModel
     {
-        private ICommand start;
+        private ICommand startCameraCommand;
+        private ICommand loadVideoFromFileCommand;
         private CamKeyboardManager camKeyboard;
         private ImageSource currentFrame;
         private ImageSource currentProcessedFrame;
@@ -28,25 +29,39 @@ namespace CamKeyboard.UI.ViewModel
         public MainViewModel(string displayName)
             : base(displayName)
         {
-            this.camKeyboard = new CamKeyboardManager();
-            this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
-            this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
         }
 
-        public ICommand Start
+        public ICommand StartCameraCommand
         {
             get
             {
-                if (this.start == null)
+                if (this.startCameraCommand == null)
                 {
-                    this.start = new AwaitableDelegateCommand(this.StartCapture);
+                    this.startCameraCommand = new AwaitableDelegateCommand(this.StartCamera);
                 }
-                return this.start;
+                return this.startCameraCommand;
             }
             protected set
             {
-                this.start = value;
-                OnPropertyChanged("Start");
+                this.startCameraCommand = value;
+                OnPropertyChanged("StartCameraCommand");
+            }
+        }
+
+        public ICommand LoadVideoFromFileCommand
+        {
+            get
+            {
+                if (this.loadVideoFromFileCommand == null)
+                {
+                    this.loadVideoFromFileCommand = new AwaitableDelegateCommand(this.LoadVideoFromFile);
+                }
+                return this.loadVideoFromFileCommand;
+            }
+            protected set
+            {
+                this.loadVideoFromFileCommand = value;
+                OnPropertyChanged("LoadVideoFromFileCommand");
             }
         }
 
@@ -66,22 +81,51 @@ namespace CamKeyboard.UI.ViewModel
             }
         }
 
-        private async Task StartCapture()
+        private async Task StartCamera()
         {
+            if (this.camKeyboard != null)
+            {
+                this.camKeyboard.Dispose();
+            }
+            this.camKeyboard = new CamKeyboardManager();
+            this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
+            this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
+            await Task.Run(() => this.camKeyboard.StartCapturing());
+        }
+
+        private async Task LoadVideoFromFile()
+        {
+            // Configure open file dialog box
+            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
+            dlg.FileName = "Movie"; // Default file name
+            dlg.DefaultExt = ".avi"; // Default file extension
+            dlg.Filter = "Video files (.avi)|*.avi"; // Filter files by extension 
+
+            // Show open file dialog box
+            Nullable<bool> result = dlg.ShowDialog();
+
+            // Process open file dialog box results 
+            string filename = null;
+            if (result == true)
+            {
+                // Open document 
+                filename = dlg.FileName;
+            }
+            if (this.camKeyboard != null)
+            {
+                this.camKeyboard.Dispose();
+            }
+            this.camKeyboard = new CamKeyboardManager(filename);
+
+            this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
+            this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
             await Task.Run(() => this.camKeyboard.StartCapturing());
         }
 
         public void OnNewFrameCaptured(object sender, OnCaptureEventHandlerArgs args)
         {
-            Application.Current.Dispatcher.Invoke(
-                DispatcherPriority.Send,
-                (DispatcherOperationCallback)(arg =>
-                {
-                    this.currentFrame = args.Image;
-                    OnPropertyChanged("GetImage");
-                    return null;
-                }), null);
-
+            this.currentFrame = args.Image;
+            OnPropertyChanged("GetImage");
         }
 
         public void OnFrameProcessed(object sender, OnFrameProcessEventHandlerArgs args)
