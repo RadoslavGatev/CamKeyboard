@@ -1,16 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Drawing;
+using System.Drawing.Text;
 using System.Linq;
 using System.Net.Configuration;
 using System.Net.NetworkInformation;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
+using Point = System.Drawing.Point;
 
 namespace CamKeyboard.Core
 {
@@ -20,6 +23,7 @@ namespace CamKeyboard.Core
         public readonly Byte Background = 0;
         public readonly int PhiBins = 4 * 360;
         public readonly double LineTreshold = 0.38;
+        public readonly int LineClosenessTreshold = 20;
 
         private Image<Bgr, Byte> frame { get; set; }
         private Image<Gray, Byte> binaryImage { get; set; }
@@ -54,34 +58,88 @@ namespace CamKeyboard.Core
 
             this.binaryImage = grayscaleImage.Dilate(1);
 
-
         }
 
         private void FindLines()
         {
-            var norm = Math.Sqrt(this.frame.Cols * this.frame.Cols +
-                                 this.frame.Rows * this.frame.Rows);
-            var lines = this.binaryImage.HoughLinesBinary(1, Math.PI / 180, 200, 0, 3);
+            var lines = this.binaryImage.HoughLinesBinary(1, Math.PI / 180, 200, 3, 20);
             if (lines.Length != 0)
-                foreach (var line in lines[0])
+            {
+                var mergedLines = this.MergeRelatedLines(lines[0]);
+
+                foreach (var line in mergedLines)
                 {
-                    this.binaryImage.Draw(line, new Gray(128), 6);
+                    this.binaryImage.Draw(line, new Gray(128), 2);
                 }
+            }
+
         }
 
-        private void CorrectAndDrawLine(LineSegment2D line, Gray color)
+        private double AngleBetweenInDegrees(Point p1, Point p2)
         {
-            //if(line[1]!=0)
-            // {
-            //     float m = -1/tan(line[1]);
-            //     float c = line[0]/sin(line[1]);
+            double angle = Math.Abs(Math.Atan2(p1.Y - p2.Y, p1.X - p2.X)) * 180 / Math.PI;
+            return angle;
+        }
 
-            //     cv::line(img, Point(0, c), Point(img.size().width, m*img.size().width+c), rgb);
-            // }
-            // else
-            // {
-            //     cv::line(img, Point(line[0], 0), Point(line[0], img.size().height), rgb);
-            // }
+        private class MergedLineModel
+        {
+            public LineSegment2D Line { get; set; }
+            public bool IsValid { get; set; }
+        }
+        private IEnumerable<LineSegment2D> MergeRelatedLines(LineSegment2D[] lines)
+        {
+
+            var mergedLines = lines.Select(
+                x => new MergedLineModel
+                {
+                    Line = x,
+                    IsValid = true
+                }).ToList();
+            if (lines.Any())
+            {
+                foreach (var currentLine in mergedLines)
+                {
+                    if (currentLine.IsValid == false)
+                    {
+                        continue;
+                    }
+
+                    double currentAngle = AngleBetweenInDegrees(currentLine.Line.P1, currentLine.Line.P2);
+                    foreach (var comparedLine in mergedLines)
+                    {
+                        if (comparedLine.IsValid == false ||
+                            (currentLine.Line.Equals(comparedLine.Line) && currentLine.IsValid == comparedLine.IsValid))
+                        {
+                            continue;
+                        }
+
+                        var comparedLineAngle = AngleBetweenInDegrees(comparedLine.Line.P1, comparedLine.Line.P2);
+                        bool areLinesSimiliar = Math.Abs(comparedLine.Line.Length - currentLine.Line.Length) < 20 &&
+                                          Math.Abs(comparedLineAngle - currentAngle) < 10;
+                        bool areLinesCloseEnough = ((double)(comparedLine.Line.P1.X - currentLine.Line.P1.X) *
+                                                    (comparedLine.Line.P1.X - currentLine.Line.P1.X) +
+                                                    (comparedLine.Line.P1.Y - currentLine.Line.P1.Y) *
+                                                    (comparedLine.Line.P1.Y - currentLine.Line.P1.Y) <
+                                                    LineClosenessTreshold * LineClosenessTreshold) &&
+                                                   ((double)(comparedLine.Line.P2.X - currentLine.Line.P2.X) *
+                                                   (comparedLine.Line.P2.X - currentLine.Line.P2.X) +
+                                                    (comparedLine.Line.P2.Y - currentLine.Line.P2.Y) *
+                                                    (comparedLine.Line.P2.Y - currentLine.Line.P2.Y) <
+                                                    LineClosenessTreshold * LineClosenessTreshold);
+                        if (areLinesSimiliar && areLinesCloseEnough)
+                        {
+                            // Merge the two
+                            var p1 = new Point((currentLine.Line.P1.X + comparedLine.Line.P1.X) / 2,
+                                (currentLine.Line.P1.Y + comparedLine.Line.P1.Y) / 2);
+                            var p2 = new Point((currentLine.Line.P2.X + comparedLine.Line.P2.X) / 2,
+                                (currentLine.Line.P2.Y + comparedLine.Line.P2.Y) / 2);
+                            currentLine.Line = new LineSegment2D(p1, p2);
+                            comparedLine.IsValid = false;
+                        }
+                    }
+                }
+            }
+            return mergedLines.Where(x => x.IsValid == true).Select(x => x.Line).ToList();
         }
 
         private void FindTheBiggestBlob()
@@ -129,7 +187,7 @@ namespace CamKeyboard.Core
                     {
                         var compThird = new MCvConnectedComp();
                         CvInvoke.cvFloodFill(this.binaryImage.Ptr, new Point(x, y), new MCvScalar(0), new MCvScalar(0),
-                                     new MCvScalar(0), out compSecond,
+                                     new MCvScalar(0), out compThird,
                                      Emgu.CV.CvEnum.CONNECTIVITY.FOUR_CONNECTED,
                                      Emgu.CV.CvEnum.FLOODFILL_FLAG.DEFAULT, IntPtr.Zero);
                     }

@@ -111,6 +111,7 @@ namespace CamKeyboard.UI.ViewModel
                 // Open document 
                 filename = dlg.FileName;
             }
+
             if (this.camKeyboard != null)
             {
                 this.camKeyboard.Dispose();
