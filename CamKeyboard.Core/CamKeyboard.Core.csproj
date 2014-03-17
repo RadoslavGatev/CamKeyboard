@@ -58,6 +58,11 @@
   <ItemGroup>
     <Compile Include="BitmapSourceConverter.cs" />
     <Compile Include="CamKeyboardManager.cs" />
+    <Compile Include="Helpers\PointExtensions.cs" />
+    <Compile Include="Helpers\SurfaceDimension.cs" />
+    <Compile Include="Helpers\SurfaceUtility.cs" />
+    <Compile Include="KeyboardInfo.cs" />
+    <Compile Include="KeyboardVertices.cs" />
     <Compile Include="KeyboardImage.cs" />
     <Compile Include="OnCaptureEventHandlerArgs.cs" />
     <Compile Include="OnFrameProcessEventHandlerArgs.cs" />

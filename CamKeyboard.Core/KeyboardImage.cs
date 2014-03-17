@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Text;
 using System.Linq;
 using System.Net.Configuration;
@@ -9,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using CamKeyboard.Core.Helpers;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
@@ -27,6 +29,8 @@ namespace CamKeyboard.Core
 
         private Image<Bgr, Byte> frame { get; set; }
         private Image<Gray, Byte> binaryImage { get; set; }
+        public static KeyboardInfo keyboardInfo { get; set; }
+        public static object thisLock = new object();
 
         public KeyboardImage(Image<Bgr, Byte> frame)
         {
@@ -42,9 +46,126 @@ namespace CamKeyboard.Core
             this.PreProcess();
             this.FindTheBiggestBlob();
             this.binaryImage.Erode(1);
-            this.FindLines();
+            var lines = this.FindLines();
+            var keyboardVertices = this.TryRecognizeKeyboardVertives(lines);
+
+            try
+            {
+                var keyboardInfo = new KeyboardInfo(keyboardVertices, this.frame.Height, this.frame.Width);
+                double proportion = 3.69;
+                int currentPrice = Int32.MaxValue;
+                if (KeyboardImage.keyboardInfo != null)
+                {
+                    currentPrice = (int)Math.Abs(KeyboardImage.keyboardInfo.Dimensions.Height * proportion -
+                                                     KeyboardImage.keyboardInfo.Dimensions.Width);
+                }
+                int newPrice = (int)Math.Abs(keyboardInfo.Dimensions.Height * proportion -
+                    keyboardInfo.Dimensions.Width);
+                if (currentPrice > newPrice)
+                {
+                    lock (thisLock)
+                    {
+                        KeyboardImage.keyboardInfo = keyboardInfo;
+                    }
+                }
+            }
+            catch (InvalidKeyboardInfoException)
+            {
+                //the current keyboard values are invalid
+            }
+
+            this.WarpPerspective();
 
             return this.binaryImage;
+        }
+
+        private void WarpPerspective()
+        {
+            if (KeyboardImage.keyboardInfo != null)
+            {
+                var surfaceDimensions = SurfaceUtility.GetDimension(KeyboardImage.keyboardInfo.Vertices.TopLeft,
+                    KeyboardImage.keyboardInfo.Vertices.TopRight,
+                    KeyboardImage.keyboardInfo.Vertices.BottomLeft,
+                    KeyboardImage.keyboardInfo.Vertices.BottomRight);
+                PointF[] srcs = new PointF[4];
+                srcs[0] = new PointF(KeyboardImage.keyboardInfo.Vertices.TopLeft.X,
+                    KeyboardImage.keyboardInfo.Vertices.TopLeft.Y);
+                srcs[1] = new PointF(KeyboardImage.keyboardInfo.Vertices.TopRight.X,
+                    KeyboardImage.keyboardInfo.Vertices.TopRight.Y);
+                srcs[2] = new PointF(KeyboardImage.keyboardInfo.Vertices.BottomLeft.X,
+                    KeyboardImage.keyboardInfo.Vertices.BottomLeft.Y);
+                srcs[3] = new PointF(KeyboardImage.keyboardInfo.Vertices.BottomRight.X,
+                    KeyboardImage.keyboardInfo.Vertices.BottomRight.Y);
+
+
+                PointF[] dsts = new PointF[4];
+                dsts[0] = new PointF(0, 0);
+                dsts[1] = new PointF((float)(surfaceDimensions.Width - 1), 0);
+                dsts[2] = new PointF(0, (float)(surfaceDimensions.Height - 1));
+                dsts[3] = new PointF((float)(surfaceDimensions.Width - 1), (float)(surfaceDimensions.Height - 1));
+
+                HomographyMatrix mywarpmat = CameraCalibration.GetPerspectiveTransform(srcs, dsts);
+                var newImage = this.binaryImage.WarpPerspective(mywarpmat, (int)surfaceDimensions.Width,
+                    (int)surfaceDimensions.Height,
+                    INTER.CV_INTER_NN, WARP.CV_WARP_DEFAULT, new Gray(0));
+                //var newImage = this.binaryImage.WarpPerspective(mywarpmat, Emgu.CV.CvEnum.INTER.CV_INTER_NN, Emgu.CV.CvEnum.WARP.CV_WARP_FILL_OUTLIERS, new Gray(0));
+                this.binaryImage = newImage;
+            }
+        }
+
+        private KeyboardVertices TryRecognizeKeyboardVertives(IEnumerable<LineSegment2D> lines)
+        {
+            var topLeft = new Point(frame.Width * 2, frame.Height * 2);
+            var topRight = new Point(-frame.Width * 2, frame.Height * 2);
+            var bottomLeft = new Point(frame.Width * 2, -frame.Height * 2);
+            var bottomRight = new Point(-frame.Width * 2, -frame.Height * 2);
+            foreach (var line in lines)
+            {
+                if (line.P1.IsMoreUpperThan(topLeft) && line.P1.IsMoreLeftThan(topLeft))
+                {
+                    topLeft = line.P1;
+                }
+                if (line.P2.IsMoreUpperThan(topLeft) && line.P2.IsMoreLeftThan(topLeft))
+                {
+                    topLeft = line.P2;
+                }
+
+                if (line.P1.IsMoreUpperThan(topRight) && line.P1.IsMoreRightThan(topRight))
+                {
+                    topRight = line.P1;
+                }
+                if (line.P2.IsMoreUpperThan(topRight) && line.P2.IsMoreRightThan(topRight))
+                {
+                    topRight = line.P2;
+                }
+
+                if (line.P1.IsMoreLowerThan(bottomLeft) && line.P1.IsMoreLeftThan(bottomLeft))
+                {
+                    bottomLeft = line.P1;
+                }
+                if (line.P2.IsMoreLowerThan(bottomLeft) && line.P2.IsMoreLeftThan(bottomLeft))
+                {
+                    bottomLeft = line.P2;
+                }
+
+                if (line.P1.IsMoreLowerThan(bottomRight) && line.P1.IsMoreRightThan(bottomRight))
+                {
+                    bottomRight = line.P1;
+                }
+                if (line.P2.IsMoreLowerThan(bottomRight) && line.P2.IsMoreRightThan(bottomRight))
+                {
+                    bottomRight = line.P2;
+                }
+            }
+
+            var keyboardVertices = new KeyboardVertices()
+            {
+                BottomLeft = bottomLeft,
+                BottomRight = bottomRight,
+                TopLeft = topLeft,
+                TopRight = topRight
+            };
+            return keyboardVertices;
         }
 
         private void PreProcess()
@@ -60,7 +181,7 @@ namespace CamKeyboard.Core
 
         }
 
-        private void FindLines()
+        private IEnumerable<LineSegment2D> FindLines()
         {
             var lines = this.binaryImage.HoughLinesBinary(1, Math.PI / 180, 200, 3, 20);
             if (lines.Length != 0)
@@ -71,8 +192,9 @@ namespace CamKeyboard.Core
                 {
                     this.binaryImage.Draw(line, new Gray(128), 2);
                 }
+                return mergedLines;
             }
-
+            return null;
         }
 
         private double AngleBetweenInDegrees(Point p1, Point p2)
