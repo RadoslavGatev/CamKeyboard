@@ -121,38 +121,38 @@ namespace CamKeyboard.Core
             var bottomRight = new Point(-frame.Width * 2, -frame.Height * 2);
             foreach (var line in lines)
             {
-                if (line.P1.IsMoreUpperThan(topLeft) && line.P1.IsMoreLeftThan(topLeft))
+                if (line.P1.IsLeftUpperThan(topLeft))
                 {
                     topLeft = line.P1;
                 }
-                if (line.P2.IsMoreUpperThan(topLeft) && line.P2.IsMoreLeftThan(topLeft))
+                if (line.P2.IsLeftUpperThan(topLeft))
                 {
                     topLeft = line.P2;
                 }
 
-                if (line.P1.IsMoreUpperThan(topRight) && line.P1.IsMoreRightThan(topRight))
+                if (line.P1.IsRightUpperThan(topRight))
                 {
                     topRight = line.P1;
                 }
-                if (line.P2.IsMoreUpperThan(topRight) && line.P2.IsMoreRightThan(topRight))
+                if (line.P2.IsRightUpperThan(topRight))
                 {
                     topRight = line.P2;
                 }
 
-                if (line.P1.IsMoreLowerThan(bottomLeft) && line.P1.IsMoreLeftThan(bottomLeft))
+                if (line.P1.IsLeftBottomThan(bottomLeft))
                 {
                     bottomLeft = line.P1;
                 }
-                if (line.P2.IsMoreLowerThan(bottomLeft) && line.P2.IsMoreLeftThan(bottomLeft))
+                if (line.P2.IsLeftBottomThan(bottomLeft))
                 {
                     bottomLeft = line.P2;
                 }
 
-                if (line.P1.IsMoreLowerThan(bottomRight) && line.P1.IsMoreRightThan(bottomRight))
+                if (line.P1.IsRightBottomThan(bottomRight))
                 {
                     bottomRight = line.P1;
                 }
-                if (line.P2.IsMoreLowerThan(bottomRight) && line.P2.IsMoreRightThan(bottomRight))
+                if (line.P2.IsRightBottomThan(bottomRight))
                 {
                     bottomRight = line.P2;
                 }
