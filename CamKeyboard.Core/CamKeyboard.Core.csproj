@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="BitmapSourceConverter.cs" />
     <Compile Include="CamKeyboardManager.cs" />
+    <Compile Include="FingertipDetector.cs" />
     <Compile Include="Helpers\PointExtensions.cs" />
     <Compile Include="Helpers\SurfaceDimension.cs" />
     <Compile Include="Helpers\SurfaceUtility.cs" />

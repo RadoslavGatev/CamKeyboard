@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Emgu.CV;
+using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 
 namespace CamKeyboard.Core
@@ -45,7 +46,7 @@ namespace CamKeyboard.Core
             {
                 throw new NullReferenceException("Capture must not be null");
             }
-
+            capture.FlipHorizontal = true;
             this.camera = capture;
         }
 
@@ -63,8 +64,10 @@ namespace CamKeyboard.Core
                 throw new NullReferenceException("Capture must not be null");
             }
 
+            //capture.SetCaptureProperty(CAP_PROP.CV_CAP_PROP_WHITE_BALANCE_BLUE_U, 20);
+            capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FPS, 30);
             capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_HEIGHT, 480);
-            capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_WIDTH, 640);
+            capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_WIDTH, 720);
 
 
             this.camera = capture;
@@ -73,7 +76,6 @@ namespace CamKeyboard.Core
         public void StartCapturing()
         {
             this.camera.ImageGrabbed += ProcessImage;
-            this.camera.FlipHorizontal = true;
             this.camera.Start();
         }
 
@@ -116,18 +118,27 @@ namespace CamKeyboard.Core
                 var workingThread = new Thread(() =>
                 {
                     var image = new KeyboardImage(frame);
-                    Image<Gray, Byte> processedImage = image.Analyze();
-                    OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
+                    Image<Bgr, Byte> processedImage = image.Analyze();
+
+                    if (KeyboardImage.KeyboardFoundFrame != null)
                     {
-                        ProcessedImage = BitmapSourceConverter.ToBitmapSource(processedImage)
-                    });
+                        var fingerTip = new FingertipDetector(KeyboardImage.KeyboardFoundFrame, frame);
+                        var img = fingerTip.Detect();
+                        OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
+                        {
+                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(img)
+                        });
+                    }
                 });
+
                 workingThread.IsBackground = true;
                 workingThread.Priority = ThreadPriority.Normal;
                 workingThread.Start();
             }
+
             this.FrameCounter++;
             OnNewFrameCaptured(this, onCaptureArgs);
+            Thread.Sleep(1000 / 30);
         }
 
 

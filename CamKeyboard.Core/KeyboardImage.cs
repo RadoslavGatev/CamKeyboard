@@ -10,6 +10,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Input;
 using CamKeyboard.Core.Helpers;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
@@ -29,7 +30,12 @@ namespace CamKeyboard.Core
 
         private Image<Bgr, Byte> frame { get; set; }
         private Image<Gray, Byte> binaryImage { get; set; }
-        public static KeyboardInfo keyboardInfo { get; set; }
+        private static KeyboardInfo keyboardInfo;
+
+        public static Image<Bgr, Byte> KeyboardFoundFrame { get { return KeyboardImage.keyboardFoundFrame; } }
+        private static Image<Bgr, Byte> keyboardFoundFrame = null;
+
+        public static KeyboardInfo KeyboardInfo { get { return keyboardInfo; } }
         public static object thisLock = new object();
 
         public KeyboardImage(Image<Bgr, Byte> frame)
@@ -38,10 +44,11 @@ namespace CamKeyboard.Core
             {
                 throw new ArgumentNullException("frame must not be null!");
             }
-            this.frame = frame;
+
+            this.frame = frame.Copy();
         }
 
-        public Image<Gray, Byte> Analyze()
+        public Image<Bgr, Byte> Analyze()
         {
             this.PreProcess();
             this.FindTheBiggestBlob();
@@ -66,6 +73,7 @@ namespace CamKeyboard.Core
                     lock (thisLock)
                     {
                         KeyboardImage.keyboardInfo = keyboardInfo;
+                        KeyboardImage.keyboardFoundFrame = this.frame.Copy();
                     }
                 }
             }
@@ -73,10 +81,9 @@ namespace CamKeyboard.Core
             {
                 //the current keyboard values are invalid
             }
-
             this.WarpPerspective();
 
-            return this.binaryImage;
+            return this.frame;
         }
 
         private void WarpPerspective()
@@ -105,11 +112,11 @@ namespace CamKeyboard.Core
                 dsts[3] = new PointF((float)(surfaceDimensions.Width - 1), (float)(surfaceDimensions.Height - 1));
 
                 HomographyMatrix mywarpmat = CameraCalibration.GetPerspectiveTransform(srcs, dsts);
-                var newImage = this.binaryImage.WarpPerspective(mywarpmat, (int)surfaceDimensions.Width,
+                var newImage = this.frame.WarpPerspective(mywarpmat, (int)surfaceDimensions.Width,
                     (int)surfaceDimensions.Height,
-                    INTER.CV_INTER_NN, WARP.CV_WARP_DEFAULT, new Gray(0));
+                    INTER.CV_INTER_NN, WARP.CV_WARP_DEFAULT, new Bgr());
                 //var newImage = this.binaryImage.WarpPerspective(mywarpmat, Emgu.CV.CvEnum.INTER.CV_INTER_NN, Emgu.CV.CvEnum.WARP.CV_WARP_FILL_OUTLIERS, new Gray(0));
-                this.binaryImage = newImage;
+                this.frame = newImage;
             }
         }
 
