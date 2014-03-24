@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 using CamKeyboard.Core.Helpers;
+using CamKeyboard.Core.Properties;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
@@ -54,7 +55,7 @@ namespace CamKeyboard.Core
             this.FindTheBiggestBlob();
             this.binaryImage.Erode(1);
             var lines = this.FindLines();
-            var keyboardVertices = this.TryRecognizeKeyboardVertives(lines);
+            var keyboardVertices = this.TryRecognizeKeyboardVertices(lines);
 
             try
             {
@@ -90,37 +91,39 @@ namespace CamKeyboard.Core
         {
             if (KeyboardImage.keyboardInfo != null)
             {
+                int padding = int.Parse(Resources.KeyboardPadding);
+
                 var surfaceDimensions = SurfaceUtility.GetDimension(KeyboardImage.keyboardInfo.Vertices.TopLeft,
                     KeyboardImage.keyboardInfo.Vertices.TopRight,
                     KeyboardImage.keyboardInfo.Vertices.BottomLeft,
                     KeyboardImage.keyboardInfo.Vertices.BottomRight);
                 PointF[] srcs = new PointF[4];
-                srcs[0] = new PointF(KeyboardImage.keyboardInfo.Vertices.TopLeft.X,
-                    KeyboardImage.keyboardInfo.Vertices.TopLeft.Y);
-                srcs[1] = new PointF(KeyboardImage.keyboardInfo.Vertices.TopRight.X,
-                    KeyboardImage.keyboardInfo.Vertices.TopRight.Y);
-                srcs[2] = new PointF(KeyboardImage.keyboardInfo.Vertices.BottomLeft.X,
-                    KeyboardImage.keyboardInfo.Vertices.BottomLeft.Y);
-                srcs[3] = new PointF(KeyboardImage.keyboardInfo.Vertices.BottomRight.X,
-                    KeyboardImage.keyboardInfo.Vertices.BottomRight.Y);
+                srcs[0] = new PointF(Math.Max(0, KeyboardImage.keyboardInfo.Vertices.TopLeft.X - padding),
+                    Math.Max(0, KeyboardImage.keyboardInfo.Vertices.TopLeft.Y - padding));
+                srcs[1] = new PointF(Math.Min(this.frame.Width, KeyboardImage.keyboardInfo.Vertices.TopRight.X + padding),
+                   Math.Max(0, KeyboardImage.keyboardInfo.Vertices.TopRight.Y - padding));
+                srcs[2] = new PointF(Math.Max(0, KeyboardImage.keyboardInfo.Vertices.BottomLeft.X - padding),
+                   Math.Min(this.frame.Height, KeyboardImage.keyboardInfo.Vertices.BottomLeft.Y + padding));
+                srcs[3] = new PointF(Math.Min(this.frame.Width, KeyboardImage.keyboardInfo.Vertices.BottomRight.X + padding),
+                    Math.Min(this.frame.Height, KeyboardImage.keyboardInfo.Vertices.BottomRight.Y + padding));
 
 
                 PointF[] dsts = new PointF[4];
                 dsts[0] = new PointF(0, 0);
-                dsts[1] = new PointF((float)(surfaceDimensions.Width - 1), 0);
-                dsts[2] = new PointF(0, (float)(surfaceDimensions.Height - 1));
-                dsts[3] = new PointF((float)(surfaceDimensions.Width - 1), (float)(surfaceDimensions.Height - 1));
+                dsts[1] = new PointF((float)(surfaceDimensions.Width + 2 * padding - 1), 0);
+                dsts[2] = new PointF(0, (float)(surfaceDimensions.Height + 2 * padding - 1));
+                dsts[3] = new PointF((float)(surfaceDimensions.Width + 2 * padding - 1), (float)(surfaceDimensions.Height + 2 * padding - 1));
 
-                HomographyMatrix mywarpmat = CameraCalibration.GetPerspectiveTransform(srcs, dsts);
-                var newImage = this.frame.WarpPerspective(mywarpmat, (int)surfaceDimensions.Width,
-                    (int)surfaceDimensions.Height,
+                HomographyMatrix warpMatrix = CameraCalibration.GetPerspectiveTransform(srcs, dsts);
+                var newImage = this.frame.WarpPerspective(warpMatrix, (int)surfaceDimensions.Width + 2 * padding,
+                    (int)surfaceDimensions.Height + 2 * padding,
                     INTER.CV_INTER_NN, WARP.CV_WARP_DEFAULT, new Bgr());
                 //var newImage = this.binaryImage.WarpPerspective(mywarpmat, Emgu.CV.CvEnum.INTER.CV_INTER_NN, Emgu.CV.CvEnum.WARP.CV_WARP_FILL_OUTLIERS, new Gray(0));
                 this.frame = newImage;
             }
         }
 
-        private KeyboardVertices TryRecognizeKeyboardVertives(IEnumerable<LineSegment2D> lines)
+        private KeyboardVertices TryRecognizeKeyboardVertices(IEnumerable<LineSegment2D> lines)
         {
             var topLeft = new Point(frame.Width * 2, frame.Height * 2);
             var topRight = new Point(-frame.Width * 2, frame.Height * 2);

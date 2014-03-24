@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Net.Mime;
 using System.Text;
@@ -22,20 +24,16 @@ namespace CamKeyboard.Core
 
         private Capture camera { get; set; }
         private int frameCounter = 0;
+        private ButtonsMatrix buttons;
+        private Dictionary<string, List<DateTime>> buttonHistory = new Dictionary<string, List<DateTime>>();
+        private Object thisLock = new Object();
 
         public int FrameCounter
         {
             get { return this.frameCounter; }
             set
             {
-                if (value > 1000)
-                {
-                    this.frameCounter = 0;
-                }
-                else
-                {
-                    this.frameCounter = value;
-                }
+                this.frameCounter = value > 1000 ? 0 : value;
             }
         }
 
@@ -122,11 +120,27 @@ namespace CamKeyboard.Core
 
                     if (KeyboardImage.KeyboardFoundFrame != null)
                     {
-                        var fingerTip = new FingertipDetector(KeyboardImage.KeyboardFoundFrame, frame);
-                        var img = fingerTip.Detect();
+                        var buttonsMatrix = new ButtonsMatrix(KeyboardImage.KeyboardInfo.Vertices.TopLeft.X,
+                            KeyboardImage.KeyboardInfo.Vertices.TopLeft.Y,
+                            KeyboardImage.KeyboardInfo.Dimensions.Height,
+                            KeyboardImage.KeyboardInfo.Dimensions.Width);
+
+                        var fingertipDetector = new FingertipDetector(KeyboardImage.KeyboardFoundFrame, frame);
+                        var fingertip = fingertipDetector.Detect();
+                        if (!fingertip.IsEmpty)
+                        {
+                            var currentButton = buttonsMatrix.GetClickedButton(new Point((int)fingertip.X, (int)fingertip.Y));
+                            if (currentButton != null)
+                            {
+
+                                Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
+                                    " " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
+                                    "\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));
+                            }
+                        }
                         OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
                         {
-                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(img)
+                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(fingertipDetector.image)
                         });
                     }
                 });
@@ -140,10 +154,5 @@ namespace CamKeyboard.Core
             OnNewFrameCaptured(this, onCaptureArgs);
             Thread.Sleep(1000 / 30);
         }
-
-
-
-
     }
-
 }
