@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
@@ -46,19 +47,24 @@ namespace CamKeyboard.Core
         public void NotifyFingerTipIsOutOfKeyboard()
         {
             LastButtonClicked = null;
-           // this.buttonHistory = new Dictionary<string, List<DateTime>>();
+            // this.buttonHistory = new Dictionary<string, List<DateTime>>();
         }
 
         private void checkIsClicked()
         {
             List<string> keysToNuke = new List<string>();
+            bool isButtonFound = false;
             foreach (var buttonClicks in buttonHistory)
             {
+                if (isButtonFound)
+                {
+                    break;
+                }
                 buttonClicks.Value.Sort();
                 var timeHistory = buttonClicks.Value;
 
                 DateTime? startTime = null;
-                for (int i = 0; i < timeHistory.Count - 1; i++)
+                for (int i = 0; i < timeHistory.Count - 1 && timeHistory.Count > 3; i++)
                 {
                     if (i == 0 || startTime == null)
                     {
@@ -79,16 +85,22 @@ namespace CamKeyboard.Core
                         OnButtonClicked(buttonClicks.Key);
                         //add for deletion
                         keysToNuke.Add(buttonClicks.Key);
+                        isButtonFound = true;
                         break;
                     }
+
                 }
             }
             lock (thisLock)
             {
-                foreach (var key in keysToNuke)
+                if (isButtonFound)
                 {
-                    this.buttonHistory.Remove(key);
+                    this.buttonHistory = new Dictionary<string, List<DateTime>>();
                 }
+                //foreach (var key in keysToNuke)
+                //{
+                //    this.buttonHistory.Remove(key);
+                //}
             }
         }
 
