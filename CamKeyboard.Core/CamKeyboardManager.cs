@@ -114,6 +114,7 @@ namespace CamKeyboard.Core
         {
             Image<Bgr, Byte> frame = this.camera.RetrieveBgrFrame();
             var currentTime = DateTime.Now;
+
             var onCaptureArgs = new OnCaptureEventHandlerArgs()
             {
                 Image = BitmapSourceConverter.ToBitmapSource(frame),
@@ -141,14 +142,16 @@ namespace CamKeyboard.Core
                             if (currentButton != null)
                             {
                                 this.buttonClickHistory.AddButton(currentButton, currentTime);
-                                Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
-                                    " " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
-                                    "\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));
+                                //Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
+                                //" " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
+                                //"\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));
                             }
                         }
+                        var frameForDrawing = frame.Copy();
+                        this.DrawObjects(ref frameForDrawing);
                         OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
                         {
-                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(fingertipDetector.image)
+                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(frameForDrawing)
                         });
                     }
                 });
@@ -161,6 +164,19 @@ namespace CamKeyboard.Core
             this.FrameCounter++;
             OnNewFrameCaptured(this, onCaptureArgs);
             Thread.Sleep(1000 / 30);
+        }
+
+        private void DrawObjects(ref Image<Bgr, Byte> frame)
+        {
+            if (KeyboardImage.KeyboardInfo != null)
+            {
+                frame.DrawPolyline(new Point[]
+                {
+                    KeyboardImage.KeyboardInfo.Vertices.TopLeft, KeyboardImage.KeyboardInfo.Vertices.TopRight,
+                    KeyboardImage.KeyboardInfo.Vertices.BottomRight, KeyboardImage.KeyboardInfo.Vertices.BottomLeft
+
+                }, true, new Bgr(Color.Red), 2);
+            }
         }
     }
 }

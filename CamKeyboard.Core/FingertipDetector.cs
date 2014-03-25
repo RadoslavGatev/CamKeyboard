@@ -36,18 +36,19 @@ namespace CamKeyboard.Core
 
             if (skinContour != null && skinContour.Length > 1)
             {
-                this.image.DrawPolyline(skinContour, true, new Bgr(60, 45, 90), 2);
-                var fingertipCircle = new CircleF(new PointF(skinContour[0].X, skinContour[0].Y), 7);
-                this.image.DrawPolyline(new Point[]
-                {
-                    KeyboardImage.KeyboardInfo.Vertices.TopLeft, KeyboardImage.KeyboardInfo.Vertices.TopRight,
-                    KeyboardImage.KeyboardInfo.Vertices.BottomRight, KeyboardImage.KeyboardInfo.Vertices.BottomLeft
+                var fingertipPoint = new PointF(skinContour[0].X, skinContour[0].Y);
+                //this.image.DrawPolyline(skinContour, true, new Bgr(60, 45, 90), 2);
+                //var fingertipCircle = new CircleF(fingertipPoint, 7);
+                //this.image.DrawPolyline(new Point[]
+                //{
+                //    KeyboardImage.KeyboardInfo.Vertices.TopLeft, KeyboardImage.KeyboardInfo.Vertices.TopRight,
+                //    KeyboardImage.KeyboardInfo.Vertices.BottomRight, KeyboardImage.KeyboardInfo.Vertices.BottomLeft
                 
-                }, true, new Bgr(Color.Red), 2);
-                //this.ApplyPCAAndDrawVectors(skinContour);
-                this.image.DrawPolyline(skinContour, true, new Bgr(Color.BlueViolet), 3);
-                image.Draw(fingertipCircle, new Bgr(Color.Blue), 2);
-                return fingertipCircle.Center;
+                //}, true, new Bgr(Color.Red), 2);
+                ////this.ApplyPCAAndDrawVectors(skinContour);
+                //this.image.DrawPolyline(skinContour, true, new Bgr(Color.BlueViolet), 3);
+                //image.Draw(fingertipCircle, new Bgr(Color.Blue), 2);
+                return fingertipPoint;
             }
 
             return PointF.Empty;

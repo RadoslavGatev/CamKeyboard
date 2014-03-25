@@ -21,7 +21,8 @@
         <StackPanel Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
             <Button Content="Start Camera" Command="{Binding StartCameraCommand}"/>
             <Button Content="Load a file" Command="{Binding LoadVideoFromFileCommand}"/>
-            <Label Content="{Binding Path=InputString, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True}"></Label>
+            <TextBlock TextWrapping="WrapWithOverflow"
+                   Text="{Binding Path=InputString, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True}"></TextBlock>
         </StackPanel>
         <Grid Grid.Column="0" Grid.Row="1">
             <Image Name="CameraProcessed" Source="{Binding Path=GetProcessedImage, UpdateSourceTrigger=PropertyChanged, NotifyOnSourceUpdated=True,NotifyOnTargetUpdated=True }"/>
