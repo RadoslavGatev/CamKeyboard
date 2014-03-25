@@ -25,6 +25,7 @@ namespace CamKeyboard.UI.ViewModel
         private CamKeyboardManager camKeyboard;
         private ImageSource currentFrame;
         private ImageSource currentProcessedFrame;
+        private string inputString;
 
         public MainViewModel(string displayName)
             : base(displayName)
@@ -73,6 +74,12 @@ namespace CamKeyboard.UI.ViewModel
             }
         }
 
+        public string InputString
+        {
+            get { return inputString; }
+        }
+
+
         public ImageSource GetProcessedImage
         {
             get
@@ -90,6 +97,8 @@ namespace CamKeyboard.UI.ViewModel
             this.camKeyboard = new CamKeyboardManager();
             this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
             this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
+            this.camKeyboard.ButtonClicked += OnButtonClicked;
+
             await Task.Run(() => this.camKeyboard.StartCapturing());
         }
 
@@ -120,6 +129,8 @@ namespace CamKeyboard.UI.ViewModel
 
             this.camKeyboard.NewFrameCaptured += OnNewFrameCaptured;
             this.camKeyboard.NewFrameProcessed += OnFrameProcessed;
+            this.camKeyboard.ButtonClicked += OnButtonClicked;
+
             await Task.Run(() => this.camKeyboard.StartCapturing());
         }
 
@@ -133,6 +144,12 @@ namespace CamKeyboard.UI.ViewModel
         {
             this.currentProcessedFrame = args.ProcessedImage;
             OnPropertyChanged("GetProcessedImage");
+        }
+
+        public void OnButtonClicked(object sender, OnButtonClickedEventHandlerArgs arg)
+        {
+            this.inputString = InputString + arg.ButtonLabel;
+            OnPropertyChanged("InputString");
         }
 
     }

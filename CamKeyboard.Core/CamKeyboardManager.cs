@@ -21,12 +21,12 @@ namespace CamKeyboard.Core
     {
         public event OnCaptureEventHandler NewFrameCaptured;
         public event OnFrameProcessEventHandler NewFrameProcessed;
+        public event OnButtonClickedEventHandler ButtonClicked;
 
         private Capture camera { get; set; }
         private int frameCounter = 0;
         private ButtonsMatrix buttons;
-        private Dictionary<string, List<DateTime>> buttonHistory = new Dictionary<string, List<DateTime>>();
-        private Object thisLock = new Object();
+        private ButtonClickHistory buttonClickHistory = new ButtonClickHistory(1000 / 15);
 
         public int FrameCounter
         {
@@ -46,6 +46,7 @@ namespace CamKeyboard.Core
             }
             capture.FlipHorizontal = true;
             this.camera = capture;
+            buttonClickHistory.ButtonClicked += OnButtonClicked;
         }
 
         public CamKeyboardManager(string videoFileName)
@@ -62,13 +63,12 @@ namespace CamKeyboard.Core
                 throw new NullReferenceException("Capture must not be null");
             }
 
-            //capture.SetCaptureProperty(CAP_PROP.CV_CAP_PROP_WHITE_BALANCE_BLUE_U, 20);
             capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FPS, 30);
             capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_HEIGHT, 480);
             capture.SetCaptureProperty(Emgu.CV.CvEnum.CAP_PROP.CV_CAP_PROP_FRAME_WIDTH, 720);
 
-
             this.camera = capture;
+            buttonClickHistory.ButtonClicked += OnButtonClicked;
         }
 
         public void StartCapturing()
@@ -102,10 +102,18 @@ namespace CamKeyboard.Core
             }
         }
 
+        protected virtual void OnButtonClicked(object sender, OnButtonClickedEventHandlerArgs arg)
+        {
+            if (ButtonClicked != null)
+            {
+                ButtonClicked(this, arg);
+            }
+        }
+
         private void ProcessImage(object sender, EventArgs arg)
         {
             Image<Bgr, Byte> frame = this.camera.RetrieveBgrFrame();
-
+            var currentTime = DateTime.Now;
             var onCaptureArgs = new OnCaptureEventHandlerArgs()
             {
                 Image = BitmapSourceConverter.ToBitmapSource(frame),
@@ -132,7 +140,7 @@ namespace CamKeyboard.Core
                             var currentButton = buttonsMatrix.GetClickedButton(new Point((int)fingertip.X, (int)fingertip.Y));
                             if (currentButton != null)
                             {
-
+                                this.buttonClickHistory.AddButton(currentButton, currentTime);
                                 Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
                                     " " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
                                     "\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));

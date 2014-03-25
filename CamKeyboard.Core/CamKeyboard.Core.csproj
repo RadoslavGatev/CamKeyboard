@@ -58,6 +58,7 @@
   <ItemGroup>
     <Compile Include="BitmapSourceConverter.cs" />
     <Compile Include="Button.cs" />
+    <Compile Include="ButtonClickHistory.cs" />
     <Compile Include="ButtonsMatrix.cs" />
     <Compile Include="CamKeyboardManager.cs" />
     <Compile Include="FingertipDetector.cs" />
@@ -67,6 +68,7 @@
     <Compile Include="KeyboardInfo.cs" />
     <Compile Include="KeyboardVertices.cs" />
     <Compile Include="KeyboardImage.cs" />
+    <Compile Include="OnButtonClickedEventHandlerArgs.cs" />
     <Compile Include="OnCaptureEventHandlerArgs.cs" />
     <Compile Include="OnFrameProcessEventHandlerArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

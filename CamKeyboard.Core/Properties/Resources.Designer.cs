@@ -61,6 +61,15 @@ namespace CamKeyboard.Core.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to 800.
+        /// </summary>
+        internal static string ButtonClickedTimeInMilliseconds {
+            get {
+                return ResourceManager.GetString("ButtonClickedTimeInMilliseconds", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to 12.
         /// </summary>
         internal static string KeyboardColumns {
