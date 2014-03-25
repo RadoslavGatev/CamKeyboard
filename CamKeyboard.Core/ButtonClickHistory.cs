@@ -67,11 +67,11 @@ namespace CamKeyboard.Core
                     var left = timeHistory[i];
                     var right = timeHistory[i + 1];
                     TimeSpan span = right - left;
-                    if (span.Milliseconds > this.millisecondBetweenFrames * 4)
-                    {
-                        startTime = null;
-                        continue;
-                    }
+                    //if (span.Milliseconds > this.millisecondBetweenFrames * 4)
+                    //{
+                    //    startTime = null;
+                    //    continue;
+                    //}
 
                     TimeSpan spanFromTheStart = right - startTime.Value;
                     if (spanFromTheStart.Milliseconds >= buttonClickedInMilliseconds)
