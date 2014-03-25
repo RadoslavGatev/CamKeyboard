@@ -120,6 +120,10 @@ namespace CamKeyboard.UI.ViewModel
                 // Open document 
                 filename = dlg.FileName;
             }
+            else
+            {
+                return;
+            }
 
             if (this.camKeyboard != null)
             {

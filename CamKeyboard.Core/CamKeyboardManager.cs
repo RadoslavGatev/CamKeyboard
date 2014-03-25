@@ -45,7 +45,7 @@ namespace CamKeyboard.Core
             {
                 throw new NullReferenceException("Capture must not be null");
             }
-            capture.FlipHorizontal = true;
+           // capture.FlipHorizontal = true;
             this.camera = capture;
             buttonClickHistory.ButtonClicked += OnButtonClicked;
         }

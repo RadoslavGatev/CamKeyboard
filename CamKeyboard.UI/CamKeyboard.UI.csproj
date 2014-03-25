@@ -173,6 +173,10 @@
     <Content Include="x64\opencv_flann290.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="x64\opencv_gpuarithm290.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="x64\opencv_gpulegacy290.dll" />
     <Content Include="x64\opencv_highgui290.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

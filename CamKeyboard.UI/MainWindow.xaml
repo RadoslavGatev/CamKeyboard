@@ -4,7 +4,7 @@
         xmlns:local="clr-namespace:CamKeyboard.UI" x:Class="CamKeyboard.UI.MainWindow"
     xmlns:views="clr-namespace:CamKeyboard.UI.Views"
     ResizeMode="CanResize"
-        Title="MainWindow" Height="550" Width="725">
+        Title="CamKeyboard" Height="550" Width="725">
     <Grid>
         <views:KeyboardControl  Height="{Binding}" Width="{Binding}"/>
     </Grid>

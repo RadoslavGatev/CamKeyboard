@@ -82,7 +82,7 @@
     <Content Include="Lib\Emgu.CV.dll" />
     <Content Include="Lib\Emgu.CV.UI.dll" />
     <Content Include="Lib\Emgu.Util.dll" />
-    <Content Include="opencv_core290.dll">
+    <Content Include="Lib\opencv_core290.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
