@@ -61,7 +61,7 @@ namespace CamKeyboard.Core.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to 800.
+        ///   Looks up a localized string similar to 887.
         /// </summary>
         internal static string ButtonClickedTimeInMilliseconds {
             get {

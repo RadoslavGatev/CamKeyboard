@@ -17,6 +17,8 @@ namespace CamKeyboard.Core
         private IDictionary<string, List<DateTime>> buttonHistory = null;
         private readonly int buttonClickedInMilliseconds = int.Parse(Resources.ButtonClickedTimeInMilliseconds);
         private readonly int millisecondBetweenFrames = 0;
+        private string LastButtonClicked = null;
+        private bool IsPointInKeyboard = true;
 
         public ButtonClickHistory(int millisecondBetweenFrames)
         {
@@ -39,6 +41,12 @@ namespace CamKeyboard.Core
                 }
                 this.checkIsClicked();
             }
+        }
+
+        public void NotifyFingerTipIsOutOfKeyboard()
+        {
+            LastButtonClicked = null;
+           // this.buttonHistory = new Dictionary<string, List<DateTime>>();
         }
 
         private void checkIsClicked()
@@ -86,14 +94,18 @@ namespace CamKeyboard.Core
 
         private void OnButtonClicked(string buttonLabel)
         {
-            if (ButtonClicked != null)
+            if (LastButtonClicked == null || buttonLabel != LastButtonClicked)
             {
-                var args = new OnButtonClickedEventHandlerArgs()
+                LastButtonClicked = buttonLabel;
+                if (ButtonClicked != null)
                 {
-                    ButtonLabel = buttonLabel
-                };
+                    var args = new OnButtonClickedEventHandlerArgs()
+                    {
+                        ButtonLabel = buttonLabel
+                    };
 
-                ButtonClicked(this, args);
+                    ButtonClicked(this, args);
+                }
             }
         }
     }

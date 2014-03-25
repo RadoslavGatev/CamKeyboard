@@ -20,7 +20,7 @@ namespace CamKeyboard.Core
         private Image<Bgr, Byte> backgroundFrame;
         private Image<Bgr, Byte> substracted;
 
-        public Image<Bgr, Byte> image { get; set; }
+        private Image<Bgr, Byte> image { get; set; }
 
         public FingertipDetector(Image<Bgr, Byte> backgroundFrame, Image<Bgr, Byte> image)
         {
@@ -43,8 +43,8 @@ namespace CamKeyboard.Core
                 //{
                 //    KeyboardImage.KeyboardInfo.Vertices.TopLeft, KeyboardImage.KeyboardInfo.Vertices.TopRight,
                 //    KeyboardImage.KeyboardInfo.Vertices.BottomRight, KeyboardImage.KeyboardInfo.Vertices.BottomLeft
-                
-                //}, true, new Bgr(Color.Red), 2);
+
+                //}, true, new Bgr(Color.Red), 2); 
                 ////this.ApplyPCAAndDrawVectors(skinContour);
                 //this.image.DrawPolyline(skinContour, true, new Bgr(Color.BlueViolet), 3);
                 //image.Draw(fingertipCircle, new Bgr(Color.Blue), 2);
@@ -57,7 +57,6 @@ namespace CamKeyboard.Core
         private void SubstractBackground()
         {
             var diff = this.backgroundFrame.Convert<Gray, Byte>();
-
             var img = image.Convert<Gray, Byte>();
             var background = backgroundFrame.Convert<Gray, Byte>();
             CvInvoke.cvAbsDiff(img.Ptr, background.Ptr, diff.Ptr);

@@ -7,6 +7,7 @@ using System.Net.Mime;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Input;
 using Emgu.CV;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
@@ -122,39 +123,7 @@ namespace CamKeyboard.Core
 
             if (this.FrameCounter % 2 == 0 && frame != null)
             {
-                var workingThread = new Thread(() =>
-                {
-                    var image = new KeyboardImage(frame);
-                    Image<Bgr, Byte> processedImage = image.Analyze();
-
-                    if (KeyboardImage.KeyboardFoundFrame != null)
-                    {
-                        var buttonsMatrix = new ButtonsMatrix(KeyboardImage.KeyboardInfo.Vertices.TopLeft.X,
-                            KeyboardImage.KeyboardInfo.Vertices.TopLeft.Y,
-                            KeyboardImage.KeyboardInfo.Dimensions.Height,
-                            KeyboardImage.KeyboardInfo.Dimensions.Width);
-
-                        var fingertipDetector = new FingertipDetector(KeyboardImage.KeyboardFoundFrame, frame);
-                        var fingertip = fingertipDetector.Detect();
-                        if (!fingertip.IsEmpty)
-                        {
-                            var currentButton = buttonsMatrix.GetClickedButton(new Point((int)fingertip.X, (int)fingertip.Y));
-                            if (currentButton != null)
-                            {
-                                this.buttonClickHistory.AddButton(currentButton, currentTime);
-                                //Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
-                                //" " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
-                                //"\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));
-                            }
-                        }
-                        var frameForDrawing = frame.Copy();
-                        this.DrawObjects(ref frameForDrawing);
-                        OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
-                        {
-                            ProcessedImage = BitmapSourceConverter.ToBitmapSource(frameForDrawing)
-                        });
-                    }
-                });
+                var workingThread = new Thread(() => PerfomAnalysis(frame, currentTime));
 
                 workingThread.IsBackground = true;
                 workingThread.Priority = ThreadPriority.Normal;
@@ -164,6 +133,46 @@ namespace CamKeyboard.Core
             this.FrameCounter++;
             OnNewFrameCaptured(this, onCaptureArgs);
             Thread.Sleep(1000 / 30);
+        }
+
+        private void PerfomAnalysis(Image<Bgr, byte> frame, DateTime currentTime)
+        {
+            var image = new KeyboardImage(frame);
+            Image<Bgr, Byte> processedImage = image.Analyze();
+
+            if (KeyboardImage.KeyboardFoundFrame != null)
+            {
+                var buttonsMatrix = new ButtonsMatrix(KeyboardImage.KeyboardInfo.Vertices.TopLeft.X,
+                    KeyboardImage.KeyboardInfo.Vertices.TopLeft.Y,
+                    KeyboardImage.KeyboardInfo.Dimensions.Height,
+                    KeyboardImage.KeyboardInfo.Dimensions.Width);
+
+                var fingertipDetector = new FingertipDetector(KeyboardImage.KeyboardFoundFrame, frame);
+                var fingertip = fingertipDetector.Detect();
+                if (!fingertip.IsEmpty)
+                {
+                    var fingertipPoint = new Point((int)fingertip.X, (int)fingertip.Y);
+                    var currentButton = buttonsMatrix.GetClickedButton(fingertipPoint);
+                    if (currentButton != null)
+                    {
+                        this.buttonClickHistory.AddButton(currentButton, currentTime);
+                        //Debug.Print(currentButton.Label + "\nfinger: " + fingertip.X +
+                        //" " + fingertip.Y + "\nButton " + currentButton.X + " " + currentButton.Y +
+                        //"\nTo     " + (currentButton.X + buttonsMatrix.buttonWidth) + " " + (currentButton.Y + buttonsMatrix.buttonHeight));
+                    }
+                }
+                else
+                {
+                    this.buttonClickHistory.NotifyFingerTipIsOutOfKeyboard();
+                }
+
+                var frameForDrawing = frame.Copy();
+                this.DrawObjects(ref frameForDrawing);
+                OnNewFrameProcessed(this, new OnFrameProcessEventHandlerArgs()
+                {
+                    ProcessedImage = BitmapSourceConverter.ToBitmapSource(frameForDrawing)
+                });
+            }
         }
 
         private void DrawObjects(ref Image<Bgr, Byte> frame)
